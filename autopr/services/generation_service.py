@@ -84,11 +84,9 @@ class GenerationService:
                 continue
             if excluded_files is not None and blob.path in excluded_files:
                 continue
-            try:
-                content = blob.data_stream.read().decode()
-            except UnicodeDecodeError:
-                print(f"Error decoding file: {blob.path}")
-                continue
+            data = lob.data_stream.read()
+            print(f"Content before decoding: {data}")
+            content = data.decode()
             token_length = len(self.rail_service.tokenizer.encode(content))
             files_with_token_lengths.append((blob.path, token_length))
         return files_with_token_lengths
@@ -98,11 +96,9 @@ class GenerationService:
         for blob in repo_tree.traverse():
             if blob.type == 'tree':
                 continue
-            try:
-                content = blob.data_stream.read().decode()
-            except UnicodeDecodeError:
-                print(f"Error decoding file: {blob.path}")
-                continue
+            data = lob.data_stream.read()
+            print(f"Content before decoding: {data}")
+            content = data.decode()
             tokens = self.tokenizer.encode(content)
             # Split into chunks up to the last newline
             chunks: list[list[tuple[int, str]]] = []
