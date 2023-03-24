@@ -84,7 +84,7 @@ class GenerationService:
                 continue
             if excluded_files is not None and blob.path in excluded_files:
                 continue
-            data = lob.data_stream.read()
+            data = blob.data_stream.read()
             print(f"Content before decoding: {data}")
             content = data.decode()
             token_length = len(self.rail_service.tokenizer.encode(content))
@@ -96,7 +96,7 @@ class GenerationService:
         for blob in repo_tree.traverse():
             if blob.type == 'tree':
                 continue
-            data = lob.data_stream.read()
+            data = blob.data_stream.read()
             print(f"Content before decoding: {data}")
             content = data.decode()
             tokens = self.tokenizer.encode(content)
