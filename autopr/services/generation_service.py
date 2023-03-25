@@ -211,6 +211,8 @@ class GenerationService:
 
     def propose_pull_request(self, issue_text: str, notes: str) -> PullRequestDescription:
         log.debug('Getting commit messages...')
+        log.debug(issue_text)
+        log.debug(notes)
         pr_desc: PullRequestDescription = self.rail_service.run_rail(
             ProposePullRequest(
                 issue=issue_text,
