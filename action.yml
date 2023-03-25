@@ -27,7 +27,7 @@ inputs:
     default: 'main'
   model:
     description: 'Name of the OpenAI chat model'
-    default: 'text-davinci-003'
+    default: 'gpt-3.5-turbo'
   context_limit:
     description: 'Maximum size of the context window to use, varies depending on the model and preference'
     default: '8192'

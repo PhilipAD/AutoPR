@@ -26,7 +26,7 @@ def main(
     issue_number: int,
     issue_title: str,
     issue_body: str,
-    model: str = "text-davinci-003",
+    model: str = "gpt-3.5-turbo",
     context_limit: int = 8192,
     min_tokens: int = 1000,
     max_tokens: int = 2000,

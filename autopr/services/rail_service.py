@@ -27,7 +27,7 @@ class RailService:
         min_tokens: int = 1000,
         context_limit: int = 8192,
         completion_func: Callable = openai.ChatCompletion.create,
-        completion_model: str = 'text-davinci-003',
+        completion_model: str = 'gpt-3.5-turbo',
         num_reasks: int = 2,
         temperature: float = 0.8,
         system_prompt: str = 'You are a software developer and git nerd, a helpful planning and coding assistant.',
