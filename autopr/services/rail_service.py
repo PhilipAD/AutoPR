@@ -131,6 +131,7 @@ class RailService:
                         raw_output=raw_o)
             return None
         try:
+            log.debug("dictionary: " +dict_o)
             return rail.output_type.parse_obj(dict_o)
         except pydantic.ValidationError:
             log.warning(f'Got invalid output from rail',
