@@ -334,18 +334,18 @@ class GenerationService:
 
             # Get the filepaths to look at
             filepaths = self.get_initial_filepaths(files, issue_text)
-            log.debug("Filepaths to look at:", filepaths)
+            log.debug(f"Filepaths to look at: {filepaths}")
 
             if filepaths:
                 # Look at the files
                 notes = self.write_notes_about_files(files, issue_text, filepaths)
             else:
                 notes = "The repository's contents were irrelevant, only create new files to address the issue."
-            log.debug("Notes about files:", notes)
+            log.debug(f"Notes about files: {notes}")
 
             # Get the commit messages and relevant filepaths
             pr_desc = self.propose_pull_request(issue_text, notes)
-            log.debug("Pull request description:", pr_desc)
+            log.debug(f"Pull request description: {pr_desc}")
 
             # Generate the patch
             commits = []
