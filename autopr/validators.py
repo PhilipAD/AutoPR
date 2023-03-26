@@ -228,146 +228,138 @@ def create_unidiff_validator(repo: Repo, diff_service: DiffService):
             return schema
 
         def fix(self, error: EventDetail) -> Any:
-            log.debug("Fixing unidiff...", value=error.value)
+            try:
+                log.debug("Fixing unidiff...", value=error.value)
 
-            tree = repo.head.commit.tree
-            value = error.value
-            lines = value.splitlines()
+                tree = repo.head.commit.tree
+                value = error.value
+                lines = value.splitlines()
 
-            # Drop any `diff --git` lines
-            lines = [line for line in lines if not line.startswith("diff --git")]
+                # Drop any `diff --git` lines
+                lines = [line for line in lines if not line.startswith("diff --git")]
 
-            # Remove whitespace in front of --- lines if it's there
-            for i, line in enumerate(lines):
-                stripped_line = line.lstrip()
-                if stripped_line.startswith("---") and \
-                        lines[i + 1].startswith("+++") and \
-                        lines[i + 2].startswith("@@"):
-                    lines[i] = stripped_line
+                # Remove whitespace in front of --- lines if it's there
+                for i, line in enumerate(lines):
+                    stripped_line = line.lstrip()
+                    if stripped_line.startswith("---") and \
+                            lines[i + 1].startswith("+++") and \
+                            lines[i + 2].startswith("@@"):
+                        lines[i] = stripped_line
 
-            # Add space at the start of any line that's empty, except if it precedes a --- line, or is the last line
-            for i, line in enumerate(lines):
-                if len(lines) < i + 2:
-                    break
-                if line == "" and not lines[i + 1].startswith("---") and i != len(lines) - 1:
-                    lines[i] = " "
+                # Add space at the start of any line that's empty, except if it precedes a --- line, or is the last line
+                for i, line in enumerate(lines):
+                    if len(lines) < i + 2:
+                        break
+                    if line == "" and not lines[i + 1].startswith("---") and i != len(lines) - 1:
+                        lines[i] = " "
 
-            # Ensure the whole thing ends with a newline
-            if not lines[-1] == "":
-                lines.append("")
+                # Ensure the whole thing ends with a newline
+                if not lines[-1] == "":
+                    lines.append("")
 
-            # If there are any +++ @@ lines, without a preceding --- line,
-            # add a `--- /dev/null` line before it
-            insert_indices: list[int] = []
-            for i, line in enumerate(lines):
-                if line.startswith("+++ ") and lines[i + 1].startswith('@@ ') and not lines[i - 1].startswith("---"):
-                    insert_indices.append(i)
-            for i, index in enumerate(insert_indices):
-                lines.insert(index + i, "--- /dev/null")
+                # If there are any +++ @@ lines, without a preceding --- line,
+                # add a `--- /dev/null` line before it
+                insert_indices: list[int] = []
+                for i, line in enumerate(lines):
+                    if line.startswith("+++ ") and lines[i + 1].startswith('@@ ') and not lines[i - 1].startswith("---"):
+                        insert_indices.append(i)
+                for i, index in enumerate(insert_indices):
+                    lines.insert(index + i, "--- /dev/null")
 
-            # Rename any hunks that start with --- a/ or +++ b/
-            for i, line in enumerate(lines):
-                if len(lines) < i + 2:
-                    break
-                if line.startswith("--- /dev/null") and lines[i + 1].startswith("+++ b/"):
-                    lines[i + 1] = lines[i + 1].replace("+++ b/", "+++ ")
-                elif line.startswith("--- a/") and lines[i + 1].startswith("+++ b/"):
-                    lines[i] = line.replace("--- a/", "--- ")
-                    lines[i + 1] = lines[i + 1].replace("+++ b/", "+++ ")
+                # Rename any hunks that start with --- a/ or +++ b/
+                for i, line in enumerate(lines):
+                    if len(lines) < i + 2:
+                        break
+                    if line.startswith("--- /dev/null") and lines[i + 1].startswith("+++ b/"):
+                        lines[i + 1] = lines[i + 1].replace("+++ b/", "+++ ")
+                    elif line.startswith("--- a/") and lines[i + 1].startswith("+++ b/"):
+                        lines[i] = line.replace("--- a/", "--- ")
+                        lines[i + 1] = lines[i + 1].replace("+++ b/", "+++ ")
 
-            # Fix filenames, such that in every block of three consecutive --- +++ @@ lines,
-            # the filename after +++ matches the filename after ---
-            # Except the filename after --- is /dev/null
-            for i, line in enumerate(lines):
-                if line.startswith("---") and not line.startswith("--- /dev/null"):
-                    # Extract the filename after ---
-                    filename_match = re.match(r"--- (.+)", line)
-                    if filename_match is None:
-                        filename = "new_file"
-                    else:
+                # Fix filenames, such that in every block of three consecutive --- +++ @@ lines,
+                # the filename after +++ matches the filename after ---
+                # Except the filename after --- is /dev/null
+                for i, line in enumerate(lines):
+                    if line.startswith("---") and not line.startswith("--- /dev/null"):
+                        # Extract the filename after ---
+                        filename_match = re.match(r"--- (.+)", line)
                         filename = filename_match.group(1)
 
-                    # Check if the next line starts with +++ and the line after that starts with @@
-                    if i + 1 < len(lines) and lines[i + 1].startswith("+++") and \
-                            i + 2 < len(lines) and lines[i + 2].startswith("@@"):
-                        # Update the next line's filename to match the filename after ---
-                        lines[i + 1] = f"+++ {filename}"
-
-            # If the file referenced on --- and +++ lines is not in the repo, replace it with /dev/null
-            for i, line in enumerate(lines):
-                if line.startswith("---") and lines[i + 1].startswith("+++") and lines[i + 2].startswith("@@"):
-                    # Extract the filename after +++
-                    filename_match = re.match(r"\+\+\+ (.+)", lines[i + 1])
-                    if filename_match is None:
-                        filename = "new_file"
-                    else:
+                        # Check if the next line starts with +++ and the line after that starts with @@
+                        if i + 1 < len(lines) and lines[i + 1].startswith("+++") and \
+                                i + 2 < len(lines) and lines[i + 2].startswith("@@"):
+                            # Update the next line's filename to match the filename after ---
+                            lines[i + 1] = f"+++ {filename}"
+                # If the file referenced on --- and +++ lines is not in the repo, replace it with /dev/null
+                for i, line in enumerate(lines):
+                    if line.startswith("---") and lines[i + 1].startswith("+++") and lines[i + 2].startswith("@@"):
+                        # Extract the filename after +++
+                        filename_match = re.match(r"\+\+\+ (.+)", lines[i + 1])
                         filename = filename_match.group(1)
 
-                    # Check if the file is in the tree
-                    if filename not in tree:
-                        # See if any of the filepaths in the tree end with the filename
-                        # If so, use that as the filename
-                        for tree_file in tree.traverse():
-                            if not isinstance(tree_file, Blob):
-                                continue
+                        # Check if the file is in the tree
+                        try:
+                            tree / filename
+                        except KeyError:
+                            # See if any of the filepaths in the tree end with the filename
+                            # If so, use that as the filename
+                            for tree_file in tree.traverse():
+                                path = tree_file.path
+                                if path.endswith(filename):
+                                    lines[i] = f"--- {path}"
+                                    lines[i + 1] = f"+++ {path}"
+                                    break
+                            else:
+                                lines[i] = f"--- /dev/null"
 
-                            path = tree_file.path
-                            if path.endswith(filename):
-                                lines[i] = f"--- {path}"
-                                lines[i + 1] = f"+++ {path}"
-                                break
-                        else:
-                            lines[i] = f"--- /dev/null"
+                # If there is a lone @@ line, prefix it with the --- and +++ lines from the previous block
+                current_block: list[str] = []
+                insertions: list[tuple[int, list[str]]] = []
+                for i, line in enumerate(lines):
+                    if line.startswith("---") and lines[i + 1].startswith("+++ ") and lines[i + 2].startswith("@@"):
+                        current_block = [lines[i], lines[i + 1]]
+                    if line.startswith("@@") and not lines[i - 1].startswith("+++ "):
+                        insertions.append((i, current_block))
+                for i, (index, newlines) in enumerate(insertions):
+                    actual_index = index + i * 2
+                    lines.insert(actual_index, newlines[0])
+                    lines.insert(actual_index + 1, newlines[1])
 
-            # If there is a lone @@ line, prefix it with the --- and +++ lines from the previous block
-            current_block: list[str] = []
-            insertions: list[tuple[int, list[str]]] = []
-            for i, line in enumerate(lines):
-                if line.startswith("---") and lines[i + 1].startswith("+++ ") and lines[i + 2].startswith("@@"):
-                    current_block = [lines[i], lines[i + 1]]
-                if line.startswith("@@") and not lines[i - 1].startswith("+++ "):
-                    insertions.append((i, current_block))
-            for i, (index, newlines) in enumerate(insertions):
-                actual_index = index + i * 2
-                lines.insert(actual_index, newlines[0])
-                lines.insert(actual_index + 1, newlines[1])
+                # Filter out new lines if they are the first line in a hunk
+                remove_indices = []
+                for i, line in enumerate(lines):
+                    if line.startswith("@@"):
+                        # Find the next line that isn't a space
+                        j = i + 1
+                        while lines[j] == " ":
+                            remove_indices.append(j)
+                            j += 1
+                for i in sorted(remove_indices, reverse=True):
+                    del lines[i]
 
-            # If it's a new file (--- starts with /dev/null), make all the lines in the hunk start with +
-            for i, line in enumerate(lines):
-                if line.startswith("--- /dev/null") and lines[i + 1].startswith("+++ ") and lines[i + 2].startswith("@@"):
-                    j = i + 3
-                    while j < len(lines) and not (lines[j].startswith("---") and lines[j + 1].startswith("+++") and lines[j + 2].startswith("@@")):
-                        if lines[j].startswith(" "):
-                            lines[j] = "+" + lines[j][1:]
-                        elif lines[j].startswith("-"):
-                            lines[j] = "+" + lines[j][1:]
-                        elif not lines[j].startswith("+"):
-                            lines[j] = "+" + lines[j]
-                        j += 1
+                # Recalculate the @@ line and remove hallucinated lines
+                try:
+                    lines = remove_hallucinations(lines, tree)
+                except Exception as e:
+                    log.error(f"Error occurred while removing hallucinations: {e}")
+                    raise ValueError("Error occurred while removing hallucinations")
 
-            # Filter out new lines if they are the first line in a hunk
-            remove_indices = []
-            for i, line in enumerate(lines):
-                if line.startswith("@@"):
-                    # Find the next line that isn't a space
-                    j = i + 1
-                    while lines[j] == " ":
-                        remove_indices.append(j)
-                        j += 1
-            for i in sorted(remove_indices, reverse=True):
-                del lines[i]
+                # Recalculate the line counts in the unidiff
+                try:
+                    lines = fix_unidiff_line_counts(lines)
+                except Exception as e:
+                    log.error(f"Error occurred while fixing line counts: {e}")
+                    raise ValueError("Error occurred while fixing line counts")
 
-            # Recalculate the @@ line and remove hallucinated lines
-            lines = remove_hallucinations(lines, tree)
+                value = "\n".join(lines)
 
-            # Recalculate the line counts in the unidiff
-            lines = fix_unidiff_line_counts(lines)
-
-            value = "\n".join(lines)
-
-            error.schema[error.key] = value
-            return error.schema
-
+                error.schema[error.key] = value
+                return error.schema
+            except Exception as e:
+                # handle the error here
+                log.error(f"Error fixing unidiff: {str(e)}")
+                error_message = "An unexpected error occurred while fixing the unidiff. Please try again later."
+                return {"error": error_message}
     return register_validator(name="unidiff", data_type="string")(Unidiff)
 
 
