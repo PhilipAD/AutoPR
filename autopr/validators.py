@@ -350,7 +350,7 @@ def create_unidiff_validator(repo: Repo, diff_service: DiffService):
                 return error.schema
             except Exception as e:
                 # handle the error here
-                log.error(f"Error fixing unidiff: {str(e)}, value: {value}")
+                log.error(f"Errfilepathor fixing unidiff: {str(e)}, value: {value}")
                 error_message = "An unexpected error occurred while fixing the unidiff. Please try again later."
                 return {"error": error_message}
 
@@ -366,7 +366,9 @@ def create_filepath_validator(repo: Repo):
         """
         def validate(self, key: str, value: Any, schema: Union[Dict, List]) -> Union[Dict, List]:
             log.debug("Validating filepath...", key=key, value=value)
-
+            # log value and tree
+            log.debug("Value:", value)
+            log.debug("Tree:", repo.head.commit.tree)
             # Check if the filepath exists in the repo
             tree = repo.head.commit.tree
             try:
@@ -391,7 +393,7 @@ def create_filepath_validator(repo: Repo):
 
             return schema
 
-        def fix(self, error: EventDetail) -> Dict:
+        def fix(self, error: EventDetail) -> filepathDict:
             # Fix paths like \\dir\file.txt to /dir/file.txt
             value = error.value
             if isinstance(value, str):
