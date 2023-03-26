@@ -350,7 +350,8 @@ def create_unidiff_validator(repo: Repo, diff_service: DiffService):
                 return error.schema
             except Exception as e:
                 # handle the error here
-                log.error(f"Errfilepathor fixing unidiff: {str(e)}, value: {value}")
+                # Print keys of dict value
+                log.error(f"Filepathor fixing unidiff: {str(e)}, value: {value}, dictKeys: {error.value.keys()}")
                 error_message = "An unexpected error occurred while fixing the unidiff. Please try again later."
                 return {"error": error_message}
 
