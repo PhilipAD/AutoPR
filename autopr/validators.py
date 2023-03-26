@@ -290,6 +290,7 @@ def create_unidiff_validator(repo: Repo, diff_service: DiffService):
                                 i + 2 < len(lines) and lines[i + 2].startswith("@@"):
                             # Update the next line's filename to match the filename after ---
                             lines[i + 1] = f"+++ {filename}"
+
                 # If the file referenced on --- and +++ lines is not in the repo, replace it with /dev/null
                 for i, line in enumerate(lines):
                     if line.startswith("---") and lines[i + 1].startswith("+++") and lines[i + 2].startswith("@@"):
@@ -338,18 +339,10 @@ def create_unidiff_validator(repo: Repo, diff_service: DiffService):
                     del lines[i]
 
                 # Recalculate the @@ line and remove hallucinated lines
-                try:
-                    lines = remove_hallucinations(lines, tree)
-                except Exception as e:
-                    log.error(f"Error occurred while removing hallucinations: {e}")
-                    raise ValueError("Error occurred while removing hallucinations")
+                lines = remove_hallucinations(lines, tree)
 
                 # Recalculate the line counts in the unidiff
-                try:
-                    lines = fix_unidiff_line_counts(lines)
-                except Exception as e:
-                    log.error(f"Error occurred while fixing line counts: {e}")
-                    raise ValueError("Error occurred while fixing line counts")
+                lines = fix_unidiff_line_counts(lines)
 
                 value = "\n".join(lines)
 
@@ -360,6 +353,7 @@ def create_unidiff_validator(repo: Repo, diff_service: DiffService):
                 log.error(f"Error fixing unidiff: {str(e)}")
                 error_message = "An unexpected error occurred while fixing the unidiff. Please try again later."
                 return {"error": error_message}
+
     return register_validator(name="unidiff", data_type="string")(Unidiff)
 
 
