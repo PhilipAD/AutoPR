@@ -330,7 +330,7 @@ class GenerationService:
             # Get file descriptors from repo
             repo_tree = repo.head.commit.tree
             files = self._repo_to_file_descriptors(repo_tree)
-            log.debug("Files in repo_tree:", files)
+            log.debug(f"Files in repo_tree: {files}")
 
             # Get the filepaths to look at
             filepaths = self.get_initial_filepaths(files, issue_text)
