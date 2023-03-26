@@ -393,7 +393,7 @@ def create_filepath_validator(repo: Repo):
 
             return schema
 
-        def fix(self, error: EventDetail) -> filepathDict:
+        def fix(self, error: EventDetail) -> Dict:
             # Fix paths like \\dir\file.txt to /dir/file.txt
             value = error.value
             if isinstance(value, str):
