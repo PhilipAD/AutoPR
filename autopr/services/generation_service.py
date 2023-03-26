@@ -317,30 +317,69 @@ class GenerationService:
         return patch_text
 
     def generate_pr(
-        self,
-        repo: Repo,
-        issue: Issue,
-    ) -> None:
-        # Switch to the base branch
-        self.commit_service.overwrite_new_branch()
+            self,
+            repo: git.Repo,
+            issue_title: str,
+            issue_body: str,
+            issue_number: int,
+            handle_commit: Callable[[PullRequestDescription, RepoCommit], None]
+        ) -> RepoPullRequest:
+            issue_text = f"Issue #{str(issue_number)}\nTitle: {issue_title}\n\n{issue_body}"
+            log.debug(f"Issue text: {issue_text}")
 
-        # Get the commit messages and relevant filepaths
-        pr_desc = self.planner_service.plan_pr(repo, issue)
+            # Get file descriptors from repo
+            repo_tree = repo.head.commit.tree
+            files = self._repo_to_file_descriptors(repo_tree)
+            log.debug("Files in repo_tree:", files)
 
-        is_published = False
-        for current_commit in pr_desc.commits:
+            # Get the filepaths to look at
+            filepaths = self.get_initial_filepaths(files, issue_text)
+            log.debug("Filepaths to look at:", filepaths)
+
+            if filepaths:
+                # Look at the files
+                notes = self.write_notes_about_files(files, issue_text, filepaths)
+            else:
+                notes = "The repository's contents were irrelevant, only create new files to address the issue."
+            log.debug("Notes about files:", notes)
+
+            # Get the commit messages and relevant filepaths
+            pr_desc = self.propose_pull_request(issue_text, notes)
+            log.debug("Pull request description:", pr_desc)
+
             # Generate the patch
-            diff = self.codegen_service.generate_patch(
-                repo,
-                issue,
-                pr_desc,
-                current_commit
+            commits = []
+            for commit_plan in pr_desc.commits:
+                diff = self.generate_patch(
+                    files,
+                    issue_text,
+                    pr_desc,
+                    commit_plan
+                )
+                log.debug(f"Diff for commit plan {commit_plan}: {diff}")
+                repo_commit = RepoCommit(
+                    message=commit_plan.commit_message,
+                    diff=diff,
+                )
+                log.debug(f"Repo commit for commit plan {commit_plan}: {repo_commit}")
+                handle_commit(pr_desc, repo_commit)
+                repo_tree = repo.head.commit.tree
+                files = self._repo_to_file_descriptors(repo_tree)
+                log.debug(f"Files after commit plan {commit_plan}: {files}")
+
+            pr_model = RepoPullRequest(
+                title=pr_desc.title,
+                body=pr_desc.body,
+                commits=commits,
             )
 
-            # Apply the patch and commit the changes
-            self.commit_service.commit(current_commit, diff)
+            # Print the PR
+            log.debug(f"Pull request model: {pr_model}")
+            log.info(f"PR title: {pr_model.title}")
+            log.info(f"{pr_model.body}")
+            log.info("Commits:")
+            for commit in pr_model.commits:
+                log.info(f" - {commit.message}")
+                log.info(f"{commit.diff}\n\n")
 
-            # Publish the PR after the first commit is written
-            if not is_published:
-                self.publish_service.publish(pr_desc)
-                is_published = True
+            return pr_model
