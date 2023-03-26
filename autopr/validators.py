@@ -367,8 +367,8 @@ def create_filepath_validator(repo: Repo):
         def validate(self, key: str, value: Any, schema: Union[Dict, List]) -> Union[Dict, List]:
             log.debug("Validating filepath...", key=key, value=value)
             # log value and tree
-            log.debug("Value:", value)
-            log.debug("Tree:", repo.head.commit.tree)
+            log.debug(f"Value: {value}", )
+            log.debug(f"Tree: {repo.head.commit.tree}", )
             # Check if the filepath exists in the repo
             tree = repo.head.commit.tree
             try:
