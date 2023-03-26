@@ -48,13 +48,15 @@ class CommitService:
         # Remove guardrails log if exists (so it's not committed later)
         if 'guardrails.log' in self.repo.untracked_files:
             log.debug('Removing guardrails.log...')
-            os.remove(
-                os.path.join(self.repo_path, 'guardrails.log')
-            )
+            os.remove(os.path.join(self.repo_path, 'guardrails.log'))
 
         # Add and commit all
         self.repo.git.execute(["git", "add", "."])
-        self.repo.git.execute(["git", "commit", "--allow-empty", "-m", commit.commit_message])
+        added_files = self.repo.git.execute(["git", "diff", "--name-only", "--cached"]).splitlines()
+        commit_message = commit.message
+        commit_diff = self.repo.git.execute(["git", "diff", "--cached"])
+        log.debug(f'Changes made:\nAdded files: {added_files}\nDiff: {commit_diff}')
+        self.repo.git.execute(["git", "commit", "--allow-empty", "-m", commit_message])
 
         # Push branch to remote
         log.debug(f'Pushing branch {self.branch_name} to remote...')
