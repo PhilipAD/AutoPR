@@ -3,7 +3,7 @@ def configure_logging(pretty=True):
     import structlog
 
     logging.basicConfig(
-        level=logging.DEBUG
+        level=logging.CRITICAL
     )
 
     if pretty:
