@@ -14,7 +14,7 @@ class InitialFileSelectResponse(RailObject):
     <string
         description="Files in this repository that we should look at."
         format="filepath"
-        on-fail="reask"
+        on-fail="noop"
     />
 </list>"""
 
@@ -98,7 +98,7 @@ class CommitPlan(RailObject):
     name="commit_message"
     description="The commit message, concisely describing the changes made."
     length="1 100"
-    on-fail="reask"
+    on-fail="noop"
 />
 <list
     name="relevant_filepaths"
@@ -113,7 +113,7 @@ class CommitPlan(RailObject):
     name="commit_changes_description"
     description="A description of the changes made in this commit, in the form of a list of bullet points."
     length="1 1000"
-    on-fail="reask"
+    on-fail="noop"
 />"""
 
     commit_message: str

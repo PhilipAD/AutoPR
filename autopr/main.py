@@ -27,6 +27,8 @@ def main(
     issue_title: str,
     issue_body: str,
     model: str = "gpt-3.5-turbo",
+    codegen_id: str = "rail-v1",
+    planner_id: str = "rail-v1",
     context_limit: int = 8192,
     min_tokens: int = 1000,
     max_tokens: int = 2000,
