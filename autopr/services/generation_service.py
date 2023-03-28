@@ -16,6 +16,8 @@ from autopr.services.commit_service import CommitService
 from autopr.services.planner_service import PlannerService
 from autopr.services.publish_service import PublishService
 from autopr.services.rail_service import RailService
+from autopr.models.repo import RepoCommit
+from autopr.models.repo import RepoPullRequest
 
 import structlog
 log = structlog.get_logger()
