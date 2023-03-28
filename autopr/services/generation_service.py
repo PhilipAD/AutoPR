@@ -1,7 +1,7 @@
 import tempfile
 from typing import Callable
 
-import git
+from git.repo import Repo
 import pydantic
 import transformers
 from git import Tree
@@ -318,7 +318,7 @@ class GenerationService:
 
     def generate_pr(
             self,
-            repo: git.Repo,
+            repo: Repo,
             issue_title: str,
             issue_body: str,
             issue_number: int,
