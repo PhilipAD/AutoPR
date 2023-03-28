@@ -1,7 +1,7 @@
 import tempfile
 from typing import Callable
 
-from git.repo import Repo
+import git
 import pydantic
 import transformers
 from git import Tree
