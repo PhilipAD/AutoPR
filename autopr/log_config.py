@@ -4,7 +4,6 @@ def configure_logging(pretty=True):
 
     logging.basicConfig(
         level=logging.CRITICAL
-        level=logging.INFO
     )
 
     if pretty:
